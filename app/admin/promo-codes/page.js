@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Plus, Pencil, Trash2, Loader2, TicketPercent } from 'lucide-react'
 import { toast } from 'sonner'
 
-const empty = { code: '', type: 'percent', value: 10, active: true, used_count: 0, usage_limit: null }
+const empty = { code: '', discount_type: 'percent', value: 10, active: true, used_count: 0, usage_limit: null }
 
 export default function PromoCodesPage() {
   const supabase = createClient()
@@ -33,7 +33,7 @@ export default function PromoCodesPage() {
     if (!form.code) return
     const payload = {
       code: form.code.toUpperCase(),
-      type: form.type,
+      discount_type: form.discount_type,
       value: Number(form.value) || 0,
       active: form.active,
       usage_limit: form.usage_limit ? Number(form.usage_limit) : null,
@@ -103,10 +103,10 @@ export default function PromoCodesPage() {
               >
                 <td className="px-6 py-3 font-mono font-semibold text-orange-500">{p.code}</td>
                 <td className="px-6 py-3">
-                  <span className="px-2 py-0.5 rounded-md bg-secondary text-xs capitalize">{p.type}</span>
+                  <span className="px-2 py-0.5 rounded-md bg-secondary text-xs capitalize">{p.discount_type}</span>
                 </td>
                 <td className="px-6 py-3 font-mono">
-                  {p.type === 'percent' ? `${Number(p.value)}%` : `$${Number(p.value).toFixed(2)}`}
+                  {p.discount_type === 'percent' ? `${Number(p.value)}%` : `$${Number(p.value).toFixed(2)}`}
                 </td>
                 <td className="px-6 py-3 font-mono text-xs text-muted-foreground">
                   {p.used_count || 0}{p.usage_limit ? ` / ${p.usage_limit}` : ''}
@@ -133,7 +133,7 @@ export default function PromoCodesPage() {
             <div><Label className="text-xs uppercase tracking-wider text-muted-foreground">Code</Label><Input value={form.code} onChange={(e)=>setForm({...form, code: e.target.value.toUpperCase()})} className="mt-1.5 bg-secondary border-border font-mono uppercase" placeholder="WELCOME10" /></div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label className="text-xs uppercase tracking-wider text-muted-foreground">Type</Label>
-                <Select value={form.type} onValueChange={(v) => setForm({...form, type: v})}>
+                <Select value={form.discount_type} onValueChange={(v) => setForm({...form, discount_type: v})}>
                   <SelectTrigger className="mt-1.5 bg-secondary border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="percent">Percent (%)</SelectItem>

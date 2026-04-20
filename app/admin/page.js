@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import StatsCard from '@/components/admin/stats-card'
 import StatusBadge from '@/components/admin/status-badge'
-import { ShoppingBag, DollarSign, Clock, Star, AlertCircle, Database } from 'lucide-react'
+import { ShoppingBag, DollarSign, Clock, Star, AlertCircle, Database, TicketPercent } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from 'recharts'
 import { format, startOfDay, subDays, startOfToday } from 'date-fns'
 import Link from 'next/link'
@@ -14,7 +14,7 @@ export default function Dashboard() {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [needsSetup, setNeedsSetup] = useState(false)
-  const [stats, setStats] = useState({ todayOrders: 0, revenue: 0, pending: 0, topItem: null })
+  const [stats, setStats] = useState({ todayOrders: 0, pending: 0, topItem: null, activePromos: 0 })
   const [recent, setRecent] = useState([])
   const [chartData, setChartData] = useState([])
 
@@ -38,7 +38,6 @@ export default function Dashboard() {
     }
 
     const todayOrders = orders.filter((o) => new Date(o.created_at) >= new Date(today))
-    const revenue = todayOrders.reduce((s, o) => s + (Number(o.total) || 0), 0)
     const pending = orders.filter((o) => o.status === 'pending').length
 
     // most ordered item
@@ -51,7 +50,10 @@ export default function Dashboard() {
     })
     const topItem = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || null
 
-    setStats({ todayOrders: todayOrders.length, revenue, pending, topItem })
+    const { data: promos } = await supabase.from('promo_codes').select('id').eq('active', true)
+    const activePromos = promos?.length || 0
+
+    setStats({ todayOrders: todayOrders.length, pending, topItem, activePromos })
     setRecent(orders.slice(0, 10))
 
     // chart: last 7 days
@@ -110,8 +112,8 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard icon={ShoppingBag} label="Today's Orders" value={stats.todayOrders} delay={0} accent />
-        <StatsCard icon={DollarSign} label="Revenue Today" value={stats.revenue} prefix="$" decimals={2} delay={0.1} />
-        <StatsCard icon={Clock} label="Pending Orders" value={stats.pending} delay={0.2} />
+        <StatsCard icon={Clock} label="Pending Orders" value={stats.pending} delay={0.1} />
+        <StatsCard icon={TicketPercent} label="Active Promos" value={stats.activePromos} delay={0.2} accent />
         <StatsCard icon={Star} label="Top Item" value={stats.topItem || '—'} delay={0.3} />
       </div>
 

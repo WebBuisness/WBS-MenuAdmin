@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Phone, Store, KeyRound, Loader2, Check } from 'lucide-react'
+import { Phone, Store, KeyRound, Loader2, Check, Clock } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function SettingsPage() {
@@ -14,8 +14,9 @@ export default function SettingsPage() {
   const [whatsapp, setWhatsapp] = useState('')
   const [isOpen, setIsOpen] = useState(true)
   const [restaurantName, setRestaurantName] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [whatsappTemplate, setWhatsappTemplate] = useState('')
   const [savingGeneral, setSavingGeneral] = useState(false)
+  const [openingHours, setOpeningHours] = useState({})
   const [newPassword, setNewPassword] = useState('')
   const [savingPwd, setSavingPwd] = useState(false)
   const [user, setUser] = useState(null)
@@ -29,8 +30,10 @@ export default function SettingsPage() {
     const map = {}
     ;(settings || []).forEach((s) => { map[s.key] = s.value })
     setWhatsapp(typeof map.whatsapp_number === 'string' ? map.whatsapp_number : (map.whatsapp_number || ''))
-    setIsOpen(map.is_open === true || map.is_open === 'true' || map.is_open === undefined ? (map.is_open !== false) : false)
+    setIsOpen(map.restaurant_open === true || map.restaurant_open === 'true' || map.restaurant_open === undefined ? (map.restaurant_open !== false) : false)
     setRestaurantName(typeof map.restaurant_name === 'string' ? map.restaurant_name : (map.restaurant_name || 'Döner House'))
+    setOpeningHours(typeof map.opening_hours === 'string' ? JSON.parse(map.opening_hours) : (map.opening_hours || {}))
+    setWhatsappTemplate(typeof map.whatsapp_template === 'string' ? map.whatsapp_template : (map.whatsapp_template || ''))
     setLoading(false)
   }
 
@@ -46,7 +49,9 @@ export default function SettingsPage() {
     try {
       await saveSetting('whatsapp_number', whatsapp)
       await saveSetting('restaurant_name', restaurantName)
-      await saveSetting('is_open', isOpen)
+      await saveSetting('restaurant_open', isOpen)
+      await saveSetting('opening_hours', openingHours)
+      await saveSetting('whatsapp_template', whatsappTemplate)
       toast.success('Settings saved')
     } catch (e) {
       toast.error(e.message)
@@ -57,7 +62,7 @@ export default function SettingsPage() {
   const toggleOpen = async (val) => {
     setIsOpen(val)
     try {
-      await saveSetting('is_open', val)
+      await saveSetting('restaurant_open', val)
       toast.success(val ? 'Restaurant OPEN' : 'Restaurant CLOSED')
     } catch (e) { toast.error(e.message) }
   }
@@ -96,6 +101,39 @@ export default function SettingsPage() {
       </motion.div>
 
       <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:0.1}} className="bg-card border border-border rounded-2xl p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <Clock className="w-4 h-4 text-orange-500" />
+          <h3 className="font-display text-lg font-semibold">Opening Hours</h3>
+        </div>
+        <div className="grid grid-cols-1 gap-3">
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
+            const key = ((i + 1) % 7).toString() // Sunday is 0
+            const times = openingHours[key] || ['09:00', '22:00']
+            return (
+              <div key={day} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-secondary/50 border border-border">
+                <span className="text-sm font-medium w-12">{day}</span>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    className="w-28 bg-card border-border text-xs" 
+                    type="time" 
+                    value={times[0]} 
+                    onChange={(e) => setOpeningHours({...openingHours, [key]: [e.target.value, times[1]]})}
+                  />
+                  <span className="text-muted-foreground text-xs">to</span>
+                  <Input 
+                    className="w-28 bg-card border-border text-xs" 
+                    type="time" 
+                    value={times[1]} 
+                    onChange={(e) => setOpeningHours({...openingHours, [key]: [times[0], e.target.value]})}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </motion.div>
+
+      <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:0.1}} className="bg-card border border-border rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-4">
           <Phone className="w-4 h-4 text-orange-500" />
           <h3 className="font-display text-lg font-semibold">General</h3>
@@ -103,6 +141,16 @@ export default function SettingsPage() {
         <div className="space-y-4">
           <div><Label className="text-xs uppercase tracking-wider text-muted-foreground">Restaurant Name</Label><Input value={restaurantName} onChange={(e)=>setRestaurantName(e.target.value)} className="mt-1.5 bg-secondary border-border" /></div>
           <div><Label className="text-xs uppercase tracking-wider text-muted-foreground">WhatsApp Number</Label><Input value={whatsapp} onChange={(e)=>setWhatsapp(e.target.value)} className="mt-1.5 bg-secondary border-border font-mono" placeholder="+966500000000" /></div>
+          <div>
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Order Message Template</Label>
+            <textarea 
+              value={whatsappTemplate} 
+              onChange={(e)=>setWhatsappTemplate(e.target.value)} 
+              className="mt-1.5 w-full min-h-[160px] p-3 rounded-lg bg-secondary border border-border text-sm font-mono scrollbar-thin resize-y focus:outline-none focus:ring-1 focus:ring-orange-500"
+              placeholder="Use {{orderNo}}, {{items}}, {{total}}, {{name}}, {{address}}"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1 tracking-tight">Available: {'{{orderNo}}, {{items}}, {{total}}, {{name}}, {{phone}}, {{address}}'}</p>
+          </div>
           <Button onClick={saveGeneral} disabled={savingGeneral} className="bg-orange-500 hover:bg-orange-600 text-white gap-2">
             {savingGeneral ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
             Save changes

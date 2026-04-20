@@ -53,7 +53,7 @@ create table if not exists orders (
 create table if not exists promo_codes (
   id uuid primary key default gen_random_uuid(),
   code text unique not null,
-  type text not null check (type in ('percent', 'fixed')),
+  discount_type text not null check (discount_type in ('percent', 'fixed')),
   value numeric(10,2) not null default 0,
   active boolean default true,
   used_count int default 0,
@@ -78,8 +78,10 @@ create table if not exists notifications (
 
 insert into settings (key, value) values
   ('whatsapp_number', '"+966500000000"'),
-  ('is_open', 'true'),
-  ('restaurant_name', '"Döner House"')
+  ('restaurant_open', 'true'),
+  ('opening_hours', '{"0":["10:00","22:00"],"1":["10:00","22:00"],"2":["10:00","22:00"],"3":["10:00","22:00"],"4":["10:00","22:00"],"5":["10:00","22:00"],"6":["10:00","22:00"]}'),
+  ('restaurant_name', '"Döner House"'),
+  ('whatsapp_template', '"🆕 *NEW ORDER: #{{orderNo}}*\\n--------------------------\\n👤 *Customer:* {{name}}\\n📞 *Phone:* {{phone}}\\n📍 *Address:* {{address}}\\n--------------------------\\n🛒 *Items:*\\n{{items}}\\n--------------------------\\n💰 *Total:* ${{total}}\\n💳 *Payment:* Cash on Delivery"')
 on conflict (key) do nothing;
 
 -- RLS
