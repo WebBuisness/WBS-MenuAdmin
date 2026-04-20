@@ -67,6 +67,15 @@ create table if not exists settings (
   updated_at timestamptz default now()
 );
 
+create table if not exists push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  endpoint text unique not null,
+  p256dh text,
+  auth text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 create table if not exists notifications (
   id uuid primary key default gen_random_uuid(),
   title text not null,
@@ -111,14 +120,19 @@ create policy "Admin full access notifications" on notifications for all using (
 drop policy if exists "Public read items" on items;
 drop policy if exists "Public read categories" on categories;
 drop policy if exists "Public read settings" on settings;
+drop policy if exists "Public read promo_codes" on promo_codes;
+drop policy if exists "Public read notifications" on notifications;
 drop policy if exists "Public insert orders" on orders;
 create policy "Public read items" on items for select using (true);
 create policy "Public read categories" on categories for select using (true);
 create policy "Public read settings" on settings for select using (true);
+create policy "Public read promo_codes" on promo_codes for select using (true);
+create policy "Public read notifications" on notifications for select using (true);
 create policy "Public insert orders" on orders for insert with check (true);
 
 -- Realtime
 alter publication supabase_realtime add table orders;
+alter publication supabase_realtime add table notifications;
 `;
 
 export default function SetupPage() {

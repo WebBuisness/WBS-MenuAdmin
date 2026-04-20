@@ -14,6 +14,7 @@ export default function SettingsPage() {
   const [whatsapp, setWhatsapp] = useState('')
   const [isOpen, setIsOpen] = useState(true)
   const [restaurantName, setRestaurantName] = useState('')
+  const [loading, setLoading] = useState(true)
   const [whatsappTemplate, setWhatsappTemplate] = useState('')
   const [savingGeneral, setSavingGeneral] = useState(false)
   const [openingHours, setOpeningHours] = useState({})
