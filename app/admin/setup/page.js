@@ -67,23 +67,6 @@ create table if not exists settings (
   updated_at timestamptz default now()
 );
 
-create table if not exists push_subscriptions (
-  id uuid primary key default gen_random_uuid(),
-  endpoint text unique not null,
-  p256dh text,
-  auth text,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
-create table if not exists notifications (
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  body text not null,
-  target text default 'all',
-  sent_at timestamptz default now(),
-  recipient_count int default 0
-);
 
 insert into settings (key, value) values
   ('whatsapp_number', '"+966500000000"'),
@@ -99,7 +82,7 @@ alter table categories enable row level security;
 alter table orders enable row level security;
 alter table promo_codes enable row level security;
 alter table settings enable row level security;
-alter table notifications enable row level security;
+
 
 -- Drop existing then recreate
 drop policy if exists "Admin full access items" on items;
@@ -107,32 +90,31 @@ drop policy if exists "Admin full access categories" on categories;
 drop policy if exists "Admin full access orders" on orders;
 drop policy if exists "Admin full access promo_codes" on promo_codes;
 drop policy if exists "Admin full access settings" on settings;
-drop policy if exists "Admin full access notifications" on notifications;
+
 
 create policy "Admin full access items" on items for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "Admin full access categories" on categories for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "Admin full access orders" on orders for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "Admin full access promo_codes" on promo_codes for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "Admin full access settings" on settings for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
-create policy "Admin full access notifications" on notifications for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
 
 -- Public read for customer app (menu, categories, settings, promo lookup)
 drop policy if exists "Public read items" on items;
 drop policy if exists "Public read categories" on categories;
 drop policy if exists "Public read settings" on settings;
 drop policy if exists "Public read promo_codes" on promo_codes;
-drop policy if exists "Public read notifications" on notifications;
+
 drop policy if exists "Public insert orders" on orders;
 create policy "Public read items" on items for select using (true);
 create policy "Public read categories" on categories for select using (true);
 create policy "Public read settings" on settings for select using (true);
 create policy "Public read promo_codes" on promo_codes for select using (true);
-create policy "Public read notifications" on notifications for select using (true);
+
 create policy "Public insert orders" on orders for insert with check (true);
 
 -- Realtime
 alter publication supabase_realtime add table orders;
-alter publication supabase_realtime add table notifications;
 `;
 
 export default function SetupPage() {
@@ -186,7 +168,7 @@ export default function SetupPage() {
       <ol className="mt-6 space-y-2 text-sm text-muted-foreground">
         <li><span className="text-orange-500 font-mono mr-2">1.</span>Click "Open SQL Editor" to jump to Supabase.</li>
         <li><span className="text-orange-500 font-mono mr-2">2.</span>Paste the SQL and click "Run".</li>
-        <li><span className="text-orange-500 font-mono mr-2">3.</span>Come back to <a href="/admin" className="text-orange-500 underline">Dashboard</a>.</li>
+        <li><span className="text-orange-500 font-mono mr-2">3.</span>Come back to <a href="/admin/items" className="text-orange-500 underline">Menu Items</a>.</li>
       </ol>
     </motion.div>
   )

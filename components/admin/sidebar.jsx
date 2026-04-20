@@ -3,12 +3,9 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  LayoutDashboard,
   UtensilsCrossed,
   FolderTree,
-  ShoppingBag,
   TicketPercent,
-  Bell,
   Settings,
   LogOut,
   Flame,
@@ -20,12 +17,9 @@ import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/items', label: 'Menu Items', icon: UtensilsCrossed },
   { href: '/admin/categories', label: 'Categories', icon: FolderTree },
-  { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/admin/promo-codes', label: 'Promo Codes', icon: TicketPercent },
-  { href: '/admin/notifications', label: 'Notifications', icon: Bell },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 

@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
-import webpush from 'web-push'
+
 
 function cors(response) {
   response.headers.set('Access-Control-Allow-Origin', '*')
@@ -25,61 +25,6 @@ async function handler(request, { params }) {
     }
 
     const supabase = createAdminClient()
-
-    // POST /api/notifications/send  { title, body, target }
-    if (route === '/notifications/send' && method === 'POST') {
-      const body = await request.json()
-      if (!body.title || !body.body) {
-        return cors(NextResponse.json({ error: 'title and body are required' }, { status: 400 }))
-      }
-
-      // 1. Log to database
-      const { data: notifData, error: notifError } = await supabase
-        .from('notifications')
-        .insert({
-          title: body.title,
-          body: body.body,
-          target: body.target || 'all',
-          recipient_count: 0,
-        })
-        .select()
-        .single()
-      if (notifError) return cors(NextResponse.json({ error: notifError.message }, { status: 500 }))
-
-      // 2. Send real Web Push to all subscriptions
-      const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-      const vapidPrivate = process.env.VAPID_PRIVATE_KEY
-      const vapidEmail = process.env.VAPID_EMAIL || 'mailto:admin@donerhouse.com'
-
-      let sent = 0
-      if (vapidPublic && vapidPrivate) {
-        webpush.setVapidDetails(vapidEmail, vapidPublic, vapidPrivate)
-
-        const { data: subs } = await supabase.from('push_subscriptions').select('*')
-        const payload = JSON.stringify({ title: body.title, body: body.body, url: '/' })
-
-        const results = await Promise.allSettled(
-          (subs || []).map((sub) =>
-            webpush.sendNotification(
-              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-              payload
-            ).catch(async (err) => {
-              // Remove invalid/expired subscriptions (410 = gone)
-              if (err.statusCode === 410 || err.statusCode === 404) {
-                await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint)
-              }
-              throw err
-            })
-          )
-        )
-        sent = results.filter((r) => r.status === 'fulfilled').length
-
-        // Update recipient count
-        await supabase.from('notifications').update({ recipient_count: sent }).eq('id', notifData.id)
-      }
-
-      return cors(NextResponse.json({ ok: true, notification: notifData, sent }))
-    }
 
     // POST /api/orders/update-status { id, status }
     if (route === '/orders/update-status' && method === 'POST') {
@@ -121,7 +66,7 @@ async function handler(request, { params }) {
 
     // GET /api/health/schema — detect if tables exist
     if (route === '/health/schema' && method === 'GET') {
-      const tables = ['items', 'categories', 'orders', 'promo_codes', 'settings', 'notifications']
+      const tables = ['items', 'categories', 'orders', 'promo_codes', 'settings']
       const missing = []
       for (const t of tables) {
         const { error } = await supabase.from(t).select('*', { count: 'exact', head: true })
