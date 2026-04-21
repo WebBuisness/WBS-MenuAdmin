@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Phone, Store, KeyRound, Loader2, Check, Clock } from 'lucide-react'
+import { Phone, Store, KeyRound, Loader2, Check, Clock, Copy, Ban } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function SettingsPage() {
@@ -78,6 +78,26 @@ export default function SettingsPage() {
     setNewPassword('')
   }
 
+  const handleToggleClosed = (key) => {
+    const current = openingHours[key]
+    if (current === 'closed') {
+      setOpeningHours({ ...openingHours, [key]: ['09:00', '22:00'] })
+    } else {
+      setOpeningHours({ ...openingHours, [key]: 'closed' })
+    }
+  }
+
+  const handleApplyToAll = (key) => {
+    const source = openingHours[key]
+    if (!source) return
+    const next = { ...openingHours }
+    ;['0', '1', '2', '3', '4', '5', '6'].forEach(k => {
+      next[k] = Array.isArray(source) ? [...source] : source
+    })
+    setOpeningHours(next)
+    toast.success('Applied to all days')
+  }
+
   if (loading) return <div className="text-center py-20"><Loader2 className="w-5 h-5 animate-spin mx-auto text-orange-500" /></div>
 
   return (
@@ -110,23 +130,58 @@ export default function SettingsPage() {
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
             const key = ((i + 1) % 7).toString() // Sunday is 0
             const times = openingHours[key] || ['09:00', '22:00']
+            const isClosed = times === 'closed'
+
             return (
-              <div key={day} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-secondary/50 border border-border">
-                <span className="text-sm font-medium w-12">{day}</span>
+              <div key={day} className={`flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border transition-all ${isClosed ? 'bg-secondary/20 border-border/50 opacity-60' : 'bg-secondary/50 border-border shadow-sm'}`}>
+                <div className="flex items-center gap-3 w-20">
+                  <span className="text-sm font-bold tracking-tight">{day}</span>
+                </div>
+
                 <div className="flex items-center gap-2">
-                  <Input 
-                    className="w-28 bg-card border-border text-xs" 
-                    type="time" 
-                    value={times[0]} 
-                    onChange={(e) => setOpeningHours({...openingHours, [key]: [e.target.value, times[1]]})}
-                  />
-                  <span className="text-muted-foreground text-xs">to</span>
-                  <Input 
-                    className="w-28 bg-card border-border text-xs" 
-                    type="time" 
-                    value={times[1]} 
-                    onChange={(e) => setOpeningHours({...openingHours, [key]: [times[0], e.target.value]})}
-                  />
+                  {isClosed ? (
+                    <div className="h-9 flex items-center px-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold uppercase tracking-wider">
+                      Closed
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        className="w-[100px] h-9 bg-card border-border text-xs font-medium focus:ring-orange-500" 
+                        type="time" 
+                        value={times[0]} 
+                        onChange={(e) => setOpeningHours({...openingHours, [key]: [e.target.value, times[1]]})}
+                      />
+                      <span className="text-muted-foreground text-[10px] uppercase font-bold px-1">to</span>
+                      <Input 
+                        className="w-[100px] h-9 bg-card border-border text-xs font-medium focus:ring-orange-500" 
+                        type="time" 
+                        value={times[1]} 
+                        onChange={(e) => setOpeningHours({...openingHours, [key]: [times[0], e.target.value]})}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 ml-auto">
+                  {!isClosed && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => handleApplyToAll(key)}
+                      className="h-8 w-8 text-muted-foreground hover:text-orange-500 hover:bg-orange-500/10"
+                      title="Apply to all days"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => handleToggleClosed(key)}
+                    className={`h-8 px-3 text-[10px] uppercase font-bold tracking-wider ${isClosed ? 'text-green-500 hover:text-green-600 hover:bg-green-500/10' : 'text-red-500 hover:text-red-600 hover:bg-red-500/10'}`}
+                  >
+                    {isClosed ? 'Open' : 'Close'}
+                  </Button>
                 </div>
               </div>
             )
