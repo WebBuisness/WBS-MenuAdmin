@@ -8,8 +8,9 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Plus, Pencil, Trash2, Loader2, TicketPercent } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, TicketPercent, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
+import { validateData, promoCodeSchema } from '@/lib/validations'
 
 const empty = { code: '', discount_type: 'percent', value: 10, active: true, used_count: 0, usage_limit: null }
 
@@ -20,6 +21,8 @@ export default function PromoCodesPage() {
   const [modal, setModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(empty)
+  const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState({})
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false })
@@ -30,24 +33,45 @@ export default function PromoCodesPage() {
   useEffect(() => { load() }, [load])
 
   const save = async () => {
-    if (!form.code) return
-    const payload = {
-      code: form.code.toUpperCase(),
-      discount_type: form.discount_type,
-      value: Number(form.value) || 0,
-      active: form.active,
-      usage_limit: form.usage_limit ? Number(form.usage_limit) : null,
+    const { success, errors: validationErrors, data: validData } = validateData(promoCodeSchema, {
+      ...form,
+      discount_value: Number(form.value),
+      max_uses: form.usage_limit ? Number(form.usage_limit) : null
+    })
+
+    if (!success) {
+      setErrors(validationErrors)
+      toast.error('Please fix validation errors')
+      return
     }
-    let error
-    if (editing) {
-      ({ error } = await supabase.from('promo_codes').update(payload).eq('id', editing.id))
-    } else {
-      ({ error } = await supabase.from('promo_codes').insert(payload))
+
+    setSaving(true)
+    setErrors({})
+
+    try {
+      const payload = {
+        code: validData.code,
+        discount_type: validData.discount_type,
+        value: validData.discount_value,
+        active: validData.active,
+        usage_limit: validData.max_uses,
+      }
+
+      let error
+      if (editing) {
+        ({ error } = await supabase.from('promo_codes').update(payload).eq('id', editing.id))
+      } else {
+        ({ error } = await supabase.from('promo_codes').insert(payload))
+      }
+      if (error) throw error
+      toast.success(editing ? 'Promo code updated' : 'Promo code created')
+      setModal(false)
+      load()
+    } catch (err) {
+      toast.error(err.message || 'Failed to save promo code')
+    } finally {
+      setSaving(false)
     }
-    if (error) return toast.error(error.message)
-    toast.success(editing ? 'Updated' : 'Created')
-    setModal(false)
-    load()
   }
 
   const remove = async (p) => {
@@ -129,8 +153,28 @@ export default function PromoCodesPage() {
       <Dialog open={modal} onOpenChange={setModal}>
         <DialogContent className="bg-card border-border">
           <DialogHeader><DialogTitle className="font-display flex items-center gap-2"><TicketPercent className="w-5 h-5 text-orange-500" />{editing ? 'Edit Promo' : 'New Promo'}</DialogTitle></DialogHeader>
+
+          {Object.keys(errors).length > 0 && (
+            <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg flex gap-3">
+              <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+              <ul className="text-xs text-destructive space-y-1">
+                {Object.entries(errors).map(([key, msg]) => (
+                  <li key={key}>• {msg}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="space-y-4 pt-2">
-            <div><Label className="text-xs uppercase tracking-wider text-muted-foreground">Code</Label><Input value={form.code} onChange={(e)=>setForm({...form, code: e.target.value.toUpperCase()})} className="mt-1.5 bg-secondary border-border font-mono uppercase" placeholder="WELCOME10" /></div>
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Code</Label>
+              <Input
+                value={form.code}
+                onChange={(e)=>setForm({...form, code: e.target.value.toUpperCase()})}
+                className={`mt-1.5 bg-secondary border-border font-mono uppercase ${errors.code ? 'border-destructive' : ''}`}
+                placeholder="WELCOME10"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label className="text-xs uppercase tracking-wider text-muted-foreground">Type</Label>
                 <Select value={form.discount_type} onValueChange={(v) => setForm({...form, discount_type: v})}>
@@ -141,17 +185,37 @@ export default function PromoCodesPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label className="text-xs uppercase tracking-wider text-muted-foreground">Value</Label><Input type="number" step="0.01" value={form.value} onChange={(e)=>setForm({...form, value: e.target.value})} className="mt-1.5 bg-secondary border-border font-mono" /></div>
+              <div>
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Value</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.value}
+                  onChange={(e)=>setForm({...form, value: e.target.value})}
+                  className={`mt-1.5 bg-secondary border-border font-mono ${errors.discount_value ? 'border-destructive' : ''}`}
+                />
+              </div>
             </div>
-            <div><Label className="text-xs uppercase tracking-wider text-muted-foreground">Usage Limit (optional)</Label><Input type="number" value={form.usage_limit || ''} onChange={(e)=>setForm({...form, usage_limit: e.target.value})} className="mt-1.5 bg-secondary border-border font-mono" placeholder="unlimited" /></div>
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Usage Limit (optional)</Label>
+              <Input
+                type="number"
+                value={form.usage_limit || ''}
+                onChange={(e)=>setForm({...form, usage_limit: e.target.value})}
+                className={`mt-1.5 bg-secondary border-border font-mono ${errors.max_uses ? 'border-destructive' : ''}`}
+                placeholder="unlimited"
+              />
+            </div>
             <div className="flex items-center justify-between p-3 rounded-lg bg-secondary">
-              <Label className="font-medium">Active</Label>
+              <Label className="font-medium text-sm">Active</Label>
               <Switch checked={form.active} onCheckedChange={(v)=>setForm({...form, active: v})} className="data-[state=checked]:bg-orange-500" />
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="outline" onClick={()=>setModal(false)}>Cancel</Button>
-            <Button onClick={save} className="bg-orange-500 hover:bg-orange-600 text-white">Save</Button>
+            <Button onClick={save} disabled={saving} className="bg-orange-500 hover:bg-orange-600 text-white min-w-[80px]">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
