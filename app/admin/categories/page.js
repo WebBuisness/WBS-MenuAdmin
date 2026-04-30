@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Plus, GripVertical, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { Plus, GripVertical, Pencil, Trash2, Loader2, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
+import { validateData, categorySchema } from '@/lib/validations'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -45,6 +46,8 @@ export default function CategoriesPage() {
   const [modal, setModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({ name_en: '', name_ar: '', active: true })
+  const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState({})
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   const load = useCallback(async () => {
@@ -74,22 +77,35 @@ export default function CategoriesPage() {
   const openEdit = (c) => { setEditing(c); setForm(c); setModal(true) }
 
   const save = async () => {
-    if (!form.name_en) return
-    let error
-    if (editing) {
-      ({ error } = await supabase.from('categories').update({
-        name_en: form.name_en, name_ar: form.name_ar, active: form.active,
-      }).eq('id', editing.id))
-    } else {
-      ({ error } = await supabase.from('categories').insert({
-        name_en: form.name_en, name_ar: form.name_ar, active: form.active,
-        sort_order: cats.length,
-      }))
+    const { success, errors: validationErrors, data: validData } = validateData(categorySchema, form)
+    if (!success) {
+      setErrors(validationErrors)
+      toast.error('Please fix validation errors')
+      return
     }
-    if (error) return toast.error(error.message)
-    toast.success(editing ? 'Updated' : 'Created')
-    setModal(false)
-    load()
+
+    setSaving(true)
+    setErrors({})
+
+    try {
+      let error
+      if (editing) {
+        ({ error } = await supabase.from('categories').update(validData).eq('id', editing.id))
+      } else {
+        ({ error } = await supabase.from('categories').insert({
+          ...validData,
+          sort_order: cats.length,
+        }))
+      }
+      if (error) throw error
+      toast.success(editing ? 'Category updated' : 'Category created')
+      setModal(false)
+      load()
+    } catch (err) {
+      toast.error(err.message || 'Failed to save category')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const remove = async (c) => {
@@ -141,17 +157,46 @@ export default function CategoriesPage() {
       <Dialog open={modal} onOpenChange={setModal}>
         <DialogContent className="bg-card border-border">
           <DialogHeader><DialogTitle className="font-display">{editing ? 'Edit Category' : 'New Category'}</DialogTitle></DialogHeader>
+
+          {Object.keys(errors).length > 0 && (
+            <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg flex gap-3">
+              <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+              <ul className="text-xs text-destructive space-y-1">
+                {Object.entries(errors).map(([key, msg]) => (
+                  <li key={key}>• {msg}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="space-y-4 pt-2">
-            <div><Label className="text-xs uppercase tracking-wider text-muted-foreground">Name (EN)</Label><Input value={form.name_en} onChange={(e)=>setForm({...form, name_en: e.target.value})} className="mt-1.5 bg-secondary border-border" /></div>
-            <div><Label className="text-xs uppercase tracking-wider text-muted-foreground">Name (AR)</Label><Input value={form.name_ar || ''} onChange={(e)=>setForm({...form, name_ar: e.target.value})} dir="rtl" className="mt-1.5 bg-secondary border-border" /></div>
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Name (EN)</Label>
+              <Input
+                value={form.name_en}
+                onChange={(e)=>setForm({...form, name_en: e.target.value})}
+                className={`mt-1.5 bg-secondary border-border ${errors.name_en ? 'border-destructive' : ''}`}
+              />
+            </div>
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Name (AR)</Label>
+              <Input
+                value={form.name_ar || ''}
+                onChange={(e)=>setForm({...form, name_ar: e.target.value})}
+                dir="rtl"
+                className="mt-1.5 bg-secondary border-border"
+              />
+            </div>
             <div className="flex items-center justify-between p-3 rounded-lg bg-secondary">
-              <Label className="font-medium">Active</Label>
+              <Label className="font-medium text-sm">Active</Label>
               <Switch checked={form.active} onCheckedChange={(v)=>setForm({...form, active: v})} className="data-[state=checked]:bg-orange-500" />
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="outline" onClick={()=>setModal(false)}>Cancel</Button>
-            <Button onClick={save} className="bg-orange-500 hover:bg-orange-600 text-white">Save</Button>
+            <Button onClick={save} disabled={saving} className="bg-orange-500 hover:bg-orange-600 text-white min-w-[80px]">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

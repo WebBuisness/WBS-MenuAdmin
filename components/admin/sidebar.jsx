@@ -16,7 +16,10 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
+import { LayoutDashboard } from 'lucide-react'
+
 const navItems = [
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/items', label: 'Menu Items', icon: UtensilsCrossed },
   { href: '/admin/categories', label: 'Categories', icon: FolderTree },
   { href: '/admin/promo-codes', label: 'Promo Codes', icon: TicketPercent },
@@ -51,7 +54,10 @@ export default function Sidebar({ userEmail }) {
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin">
         {navItems.map((item, idx) => {
           const Icon = item.icon
-          const active = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
+          const active = item.href === '/admin'
+            ? pathname === '/admin'
+            : pathname.startsWith(item.href)
+
           return (
             <motion.div
               key={item.href}
@@ -75,7 +81,7 @@ export default function Sidebar({ userEmail }) {
                     className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-orange-500 rounded-r"
                   />
                 )}
-                <Icon className="w-4 h-4 shrink-0" />
+                <Icon className={cn("w-4 h-4 shrink-0", active && "animate-pulse")} />
                 <span className="font-medium">{item.label}</span>
               </Link>
             </motion.div>

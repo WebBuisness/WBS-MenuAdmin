@@ -43,10 +43,12 @@ export default function AdminLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
+    <div className="min-h-screen bg-[#050505]">
       <Sidebar userEmail={email} />
       <main className="lg:pl-64 min-h-screen">
-        <div className="p-4 lg:p-8 pt-16 lg:pt-8">{children}</div>
+        <div className="max-w-[1600px] mx-auto p-4 lg:p-10 pt-20 lg:pt-10">
+          {children}
+        </div>
       </main>
     </div>
   )

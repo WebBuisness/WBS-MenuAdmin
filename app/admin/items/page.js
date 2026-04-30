@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Search, Pencil, Trash2, ImageOff, Star, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, ImageOff, Star, Loader2, AlertCircle, Filter, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { validateData, itemSchema } from '@/lib/validations';
 import { TableSkeleton } from '@/components/Skeletons';
@@ -167,18 +167,34 @@ export default function ItemsPage() {
         </Button>
       </div>
 
-      <div className="flex gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[240px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search items..." className="pl-9 bg-card border-border" />
+      <div className="bg-card/50 p-1 rounded-2xl border border-border flex flex-wrap gap-2 items-center">
+        <div className="relative flex-1 min-w-[300px]">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name or description..."
+            className="pl-10 h-11 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          />
         </div>
-        <Select value={filterCat} onValueChange={setFilterCat}>
-          <SelectTrigger className="w-[200px] bg-card border-border"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All categories</SelectItem>
-            {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name_en}</SelectItem>)}
-          </SelectContent>
-        </Select>
+
+        <div className="flex items-center gap-2 pr-1">
+          <div className="h-8 w-[1px] bg-border mx-2 hidden sm:block" />
+          <Select value={filterCat} onValueChange={setFilterCat}>
+            <SelectTrigger className="w-[180px] h-9 bg-secondary border-none text-xs font-medium focus:ring-orange-500">
+              <div className="flex items-center gap-2">
+                <Filter className="w-3 h-3 text-orange-500" />
+                <SelectValue placeholder="All Categories" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name_en}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {error && (
@@ -227,7 +243,7 @@ export default function ItemsPage() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(idx, 10) * 0.03 }}
-                    className="border-b border-border hover:bg-secondary/30"
+                    className={`border-b border-border hover:bg-secondary/30 transition-colors ${!it.available ? 'opacity-60 grayscale-[0.5]' : ''}`}
                   >
                     <td className="px-6 py-3">
                       {it.image_url ? (
@@ -250,7 +266,7 @@ export default function ItemsPage() {
                       <div className="text-xs text-muted-foreground">{it.name_ar}</div>
                     </td>
                     <td className="px-6 py-3 text-muted-foreground">{catName(it.category_id)}</td>
-                    <td className="px-6 py-3 font-mono font-semibold">
+                    <td className="px-6 py-3 font-mono font-semibold text-orange-500">
                       ${Number(it.price).toFixed(2)}
                     </td>
                     <td className="px-6 py-3">
