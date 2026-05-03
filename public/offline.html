@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#F97316" />
+    <title>Offline | WBS Admin</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        background: #0a0a0a;
+        color: #fafafa;
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        padding: 24px;
+      }
+      .wrap { max-width: 520px; width: 100%; text-align: center; }
+      .logo {
+        width: 72px; height: 72px;
+        border-radius: 16px;
+        box-shadow: 0 0 40px -10px rgba(249, 115, 22, 0.35);
+        margin: 0 auto 16px;
+        display: block;
+      }
+      h1 { font-size: 20px; margin: 0 0 8px; }
+      p { margin: 0; color: rgba(250,250,250,0.7); font-size: 14px; line-height: 1.45; }
+      .hint { margin-top: 14px; font-size: 12px; color: rgba(250,250,250,0.55); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <img class="logo" src="/icons/icon-192.png" alt="WBS Admin" />
+      <h1>You are offline</h1>
+      <p>The admin panel needs an internet connection to load live data. Reconnect and try again.</p>
+      <div class="hint">Tip: once loaded at least once, the app will reopen faster next time.</div>
+    </div>
+  </body>
+</html>
+

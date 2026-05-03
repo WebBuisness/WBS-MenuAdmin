@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Search, Pencil, Trash2, ImageOff, Star, Loader2, AlertCircle, Filter, ChevronDown } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, ImageOff, Star, Loader2, AlertCircle, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { validateData, itemSchema } from '@/lib/validations';
 import { TableSkeleton } from '@/components/Skeletons';

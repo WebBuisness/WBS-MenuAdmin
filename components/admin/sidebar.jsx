@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -8,15 +9,13 @@ import {
   TicketPercent,
   Settings,
   LogOut,
-  Flame,
   Menu,
   X,
+  LayoutDashboard,
 } from 'lucide-react'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
-
-import { LayoutDashboard } from 'lucide-react'
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -41,9 +40,14 @@ export default function Sidebar({ userEmail }) {
     <div className="h-full flex flex-col bg-[#070707] border-r border-border">
       {/* Logo */}
       <div className="p-6 flex items-center gap-3 border-b border-border">
-        <div className="w-9 h-9 rounded-lg bg-orange-500 flex items-center justify-center glow-orange">
-          <Flame className="w-5 h-5 text-white" />
-        </div>
+        <Image
+          src="/icons/icon-192.png"
+          width={36}
+          height={36}
+          alt="WBS Admin"
+          className="w-9 h-9 rounded-lg glow-orange"
+          priority
+        />
         <div>
           <h1 className="font-display text-base font-bold leading-tight">WBS Menu Demo</h1>
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Admin</p>
@@ -54,9 +58,8 @@ export default function Sidebar({ userEmail }) {
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-thin">
         {navItems.map((item, idx) => {
           const Icon = item.icon
-          const active = item.href === '/admin'
-            ? pathname === '/admin'
-            : pathname.startsWith(item.href)
+          const active =
+            item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href)
 
           return (
             <motion.div
@@ -81,7 +84,7 @@ export default function Sidebar({ userEmail }) {
                     className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-orange-500 rounded-r"
                   />
                 )}
-                <Icon className={cn("w-4 h-4 shrink-0", active && "animate-pulse")} />
+                <Icon className={cn('w-4 h-4 shrink-0', active && 'animate-pulse')} />
                 <span className="font-medium">{item.label}</span>
               </Link>
             </motion.div>
@@ -93,7 +96,7 @@ export default function Sidebar({ userEmail }) {
       <div className="p-3 border-t border-border">
         <div className="px-3 py-2 mb-2">
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Signed in</p>
-          <p className="text-xs font-mono truncate mt-0.5">{userEmail || '—'}</p>
+          <p className="text-xs font-mono truncate mt-0.5">{userEmail || '-'}</p>
         </div>
         <button
           onClick={handleLogout}
@@ -117,9 +120,7 @@ export default function Sidebar({ userEmail }) {
       </button>
 
       {/* Desktop */}
-      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 z-30">
-        {SidebarBody}
-      </aside>
+      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 z-30">{SidebarBody}</aside>
 
       {/* Mobile drawer */}
       <AnimatePresence>

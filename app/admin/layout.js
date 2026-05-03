@@ -1,9 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import Sidebar from '@/components/admin/sidebar'
-import { Loader2, Flame } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 export default function AdminLayout({ children }) {
   const router = useRouter()
@@ -33,9 +34,14 @@ export default function AdminLayout({ children }) {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-14 h-14 rounded-xl bg-orange-500 flex items-center justify-center pulse-ring">
-            <Flame className="w-7 h-7 text-white" />
-          </div>
+          <Image
+            src="/icons/icon-192.png"
+            width={56}
+            height={56}
+            alt="WBS Admin"
+            className="w-14 h-14 rounded-xl pulse-ring glow-orange"
+            priority
+          />
           <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
         </div>
       </div>

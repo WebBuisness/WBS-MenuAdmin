@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import StatsCard from '@/components/admin/stats-card'
 import {
@@ -13,7 +12,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { TableSkeleton } from '@/components/Skeletons'
-import { format } from 'date-fns'
+import { toast } from 'sonner'
 
 export default function Dashboard() {
   const supabase = createClient()
@@ -36,6 +35,11 @@ export default function Dashboard() {
           supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(5)
         ])
 
+        const firstErr = items.error || cats.error || promos.error || orders.error
+        if (firstErr) {
+          toast.error(firstErr.message || 'Failed to load dashboard')
+        }
+
         setStats({
           items: items.data?.length || 0,
           categories: cats.data?.length || 0,
@@ -45,6 +49,7 @@ export default function Dashboard() {
         setRecentOrders(orders.data || [])
       } catch (err) {
         console.error('Error loading dashboard:', err)
+        toast.error(err?.message || 'Failed to load dashboard')
       } finally {
         setLoading(false)
       }
@@ -69,7 +74,7 @@ export default function Dashboard() {
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Overview of your restaurant's performance</p>
+        <p className="text-muted-foreground mt-1">Overview of your restaurant&apos;s performance</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

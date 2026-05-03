@@ -2,12 +2,13 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Loader2, Flame } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -33,20 +34,25 @@ export default function LoginPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
         })
-        const json = await res.json()
+        const json = await res.json().catch(() => ({}))
         if (!res.ok) throw new Error(json.error || 'Signup failed')
-        toast.success('Admin account created. Signing in\u2026')
+        toast.success('Admin account created. Signing in...')
         const { error: signinErr } = await supabase.auth.signInWithPassword({ email, password })
         if (signinErr) throw signinErr
         router.replace('/admin')
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) throw error
+        if (error) {
+          if (error.status === 400) {
+            throw new Error('Invalid email or password. Please check your credentials.')
+          }
+          throw error
+        }
         toast.success('Welcome back')
         router.replace('/admin')
       }
     } catch (err) {
-      toast.error(err.message || 'Authentication failed')
+      toast.error(err?.message || 'Authentication failed')
     } finally {
       setLoading(false)
     }
@@ -64,9 +70,14 @@ export default function LoginPage() {
         className="w-full max-w-md relative z-10"
       >
         <div className="flex items-center gap-3 mb-8 justify-center">
-          <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center glow-orange">
-            <Flame className="w-6 h-6 text-white" />
-          </div>
+          <Image
+            src="/icons/icon-192.png"
+            width={48}
+            height={48}
+            alt="WBS Admin"
+            className="w-12 h-12 rounded-xl glow-orange"
+            priority
+          />
           <div>
             <h1 className="font-display text-2xl font-bold tracking-tight">WBS Menu Demo</h1>
             <p className="text-xs text-muted-foreground uppercase tracking-widest">Admin Panel</p>
@@ -78,14 +89,14 @@ export default function LoginPage() {
             {mode === 'signin' ? 'Sign in' : 'Create admin account'}
           </h2>
           <p className="text-sm text-muted-foreground mb-6">
-            {mode === 'signin'
-              ? 'Enter your credentials to continue'
-              : 'Set up the first admin account'}
+            {mode === 'signin' ? 'Enter your credentials to continue' : 'Set up the first admin account'}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="email" className="text-xs uppercase tracking-wider text-muted-foreground">Email</Label>
+              <Label htmlFor="email" className="text-xs uppercase tracking-wider text-muted-foreground">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -93,11 +104,14 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="mt-1.5 bg-secondary border-border h-11"
-                placeholder="admin@karmeshbroasted.com"
+                placeholder="admin@example.com"
+                autoComplete="email"
               />
             </div>
             <div>
-              <Label htmlFor="password" className="text-xs uppercase tracking-wider text-muted-foreground">Password</Label>
+              <Label htmlFor="password" className="text-xs uppercase tracking-wider text-muted-foreground">
+                Password
+              </Label>
               <Input
                 id="password"
                 type="password"
@@ -106,7 +120,8 @@ export default function LoginPage() {
                 required
                 minLength={6}
                 className="mt-1.5 bg-secondary border-border h-11 font-mono"
-                placeholder="••••••••"
+                placeholder="********"
+                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
               />
             </div>
             <Button
@@ -114,7 +129,13 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full h-11 bg-orange-500 hover:bg-orange-600 text-white font-medium"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (mode === 'signin' ? 'Sign in' : 'Create account')}
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : mode === 'signin' ? (
+                'Sign in'
+              ) : (
+                'Create account'
+              )}
             </Button>
           </form>
 
@@ -123,7 +144,7 @@ export default function LoginPage() {
               onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
               className="text-xs text-muted-foreground hover:text-orange-500 transition-colors"
             >
-              {mode === 'signin' ? "First time? Create admin account →" : '← Back to sign in'}
+              {mode === 'signin' ? 'First time? Create admin account ->' : '<- Back to sign in'}
             </button>
           </div>
         </div>

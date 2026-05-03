@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
-
+import { z } from 'zod'
 
 function cors(response) {
   response.headers.set('Access-Control-Allow-Origin', '*')
@@ -9,9 +9,36 @@ function cors(response) {
   return response
 }
 
+function json(status, body) {
+  return cors(NextResponse.json(body, { status }))
+}
+
+async function safeJson(request) {
+  try {
+    return await request.json()
+  } catch {
+    return null
+  }
+}
+
 export async function OPTIONS() {
   return cors(new NextResponse(null, { status: 200 }))
 }
+
+const orderUpdateSchema = z.object({
+  id: z.string().min(1),
+  status: z.string().min(1).max(32),
+})
+
+const adminCreateSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6).max(72),
+})
+
+const passwordChangeSchema = z.object({
+  user_id: z.string().min(1),
+  new_password: z.string().min(6).max(72),
+})
 
 async function handler(request, { params }) {
   const { path = [] } = params
@@ -21,64 +48,84 @@ async function handler(request, { params }) {
   try {
     // Health / root
     if ((route === '/' || route === '/root') && method === 'GET') {
-      return cors(NextResponse.json({ message: 'WBS Menu Demo Admin API' }))
+      return json(200, { message: 'WBS Menu Demo Admin API' })
     }
 
     const supabase = createAdminClient()
 
     // POST /api/orders/update-status { id, status }
     if (route === '/orders/update-status' && method === 'POST') {
-      const { id, status } = await request.json()
+      const payload = await safeJson(request)
+      const parsed = orderUpdateSchema.safeParse(payload)
+      if (!parsed.success) return json(400, { error: 'Invalid payload' })
+
+      const { id, status } = parsed.data
       const { data, error } = await supabase
         .from('orders')
         .update({ status })
         .eq('id', id)
         .select()
         .single()
-      if (error) return cors(NextResponse.json({ error: error.message }, { status: 500 }))
-      // NOTE: FCM push to customer would fire here.
-      return cors(NextResponse.json({ ok: true, order: data }))
+
+      if (error) return json(500, { error: error.message })
+      return json(200, { ok: true, order: data })
     }
 
-    // POST /api/admin/create { email, password } \u2014 creates auto-confirmed admin
+    // POST /api/admin/create { email, password } - creates auto-confirmed admin
     if (route === '/admin/create' && method === 'POST') {
-      const { email, password } = await request.json()
-      if (!email || !password) return cors(NextResponse.json({ error: 'email & password required' }, { status: 400 }))
-      // Check if any admin already exists \u2014 prevents anyone from creating new admins later
-      const { data: list } = await supabase.auth.admin.listUsers()
-      if (list?.users?.length > 0) {
-        return cors(NextResponse.json({ error: 'An admin already exists. Contact existing admin.' }, { status: 403 }))
+      const payload = await safeJson(request)
+      const parsed = adminCreateSchema.safeParse(payload)
+      if (!parsed.success) return json(400, { error: 'Invalid email or password' })
+
+      const { email, password } = parsed.data
+
+      // Check if any admin already exists - prevents anyone from creating new admins later
+      const { data: list, error: listErr } = await supabase.auth.admin.listUsers()
+      if (listErr) return json(500, { error: listErr.message })
+      if ((list?.users?.length || 0) > 0) {
+        return json(403, { error: 'An admin already exists. Contact existing admin.' })
       }
+
       const { data, error } = await supabase.auth.admin.createUser({
-        email, password, email_confirm: true,
+        email,
+        password,
+        email_confirm: true,
       })
-      if (error) return cors(NextResponse.json({ error: error.message }, { status: 500 }))
-      return cors(NextResponse.json({ ok: true, user: { id: data.user.id, email: data.user.email } }))
+      if (error) return json(500, { error: error.message })
+
+      return json(200, { ok: true, user: { id: data.user.id, email: data.user.email } })
     }
 
     // POST /api/password-change { user_id, new_password }
     if (route === '/password-change' && method === 'POST') {
-      const { user_id, new_password } = await request.json()
+      const payload = await safeJson(request)
+      const parsed = passwordChangeSchema.safeParse(payload)
+      if (!parsed.success) return json(400, { error: 'Invalid payload' })
+
+      const { user_id, new_password } = parsed.data
       const { error } = await supabase.auth.admin.updateUserById(user_id, { password: new_password })
-      if (error) return cors(NextResponse.json({ error: error.message }, { status: 500 }))
-      return cors(NextResponse.json({ ok: true }))
+      if (error) return json(500, { error: error.message })
+      return json(200, { ok: true })
     }
 
-    // GET /api/health/schema — detect if tables exist
+    // GET /api/health/schema - detect if tables exist
     if (route === '/health/schema' && method === 'GET') {
       const tables = ['items', 'categories', 'orders', 'promo_codes', 'settings']
       const missing = []
+
       for (const t of tables) {
         const { error } = await supabase.from(t).select('*', { count: 'exact', head: true })
         if (error) missing.push({ table: t, error: error.message })
       }
-      return cors(NextResponse.json({ ok: missing.length === 0, missing }))
+
+      return json(200, { ok: missing.length === 0, missing })
     }
 
-    return cors(NextResponse.json({ error: `Route ${route} not found` }, { status: 404 }))
+    return json(404, { error: `Route ${route} not found` })
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.error('API error:', err)
-    return cors(NextResponse.json({ error: err.message || 'Server error' }, { status: 500 }))
+    return json(500, { error: err?.message || 'Server error' })
   }
 }
 
@@ -87,3 +134,4 @@ export const POST = handler
 export const PUT = handler
 export const DELETE = handler
 export const PATCH = handler
+
