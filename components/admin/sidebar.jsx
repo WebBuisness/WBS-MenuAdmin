@@ -113,10 +113,11 @@ export default function Sidebar({ userEmail }) {
     <>
       {/* Mobile hamburger */}
       <button
-        onClick={() => setOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-40 w-10 h-10 rounded-lg bg-card border border-border flex items-center justify-center"
+       onClick={() => setOpen(true)}
+       aria-label="Open navigation menu"
+       className="lg:hidden fixed top-4 left-4 z-40 w-10 h-10 rounded-lg bg-card border border-border flex items-center justify-center"
       >
-        <Menu className="w-5 h-5" />
+       <Menu className="w-5 h-5" />
       </button>
 
       {/* Desktop */}
@@ -124,29 +125,29 @@ export default function Sidebar({ userEmail }) {
 
       {/* Mobile drawer */}
       <AnimatePresence>
-        {open && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)}
-              className="lg:hidden fixed inset-0 bg-black/60 z-40"
-            />
-            <motion.aside
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25 }}
-              className="lg:hidden fixed left-0 top-0 bottom-0 w-64 z-50"
-            >
-              <button
-                onClick={() => setOpen(false)}
-                className="absolute top-4 right-4 w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              {SidebarBody}
+       {open && (
+         <>
+           <motion.div
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
+             onClick={() => setOpen(false)}
+             className="lg:hidden fixed inset-0 bg-black/60 z-40"
+           />
+           <motion.aside
+             initial={{ x: '-100%' }}
+             animate={{ x: 0 }}
+             exit={{ x: '-100%' }}
+             transition={{ type: 'spring', damping: 25 }}
+             className="lg:hidden fixed left-0 top-0 bottom-0 w-64 z-50"
+           >
+             <button
+               onClick={() => setOpen(false)}
+               aria-label="Close navigation menu"
+               className="absolute top-4 right-4 w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground"
+             >
+               <X className="w-5 h-5" />
+             </button>              {SidebarBody}
             </motion.aside>
           </>
         )}

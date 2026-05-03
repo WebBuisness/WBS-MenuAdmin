@@ -27,7 +27,6 @@ const nextConfig = {
 
   webpack(config, { dev }) {
     if (dev) {
-      config.devtool = 'eval';
       // Use native watchers for better performance on Windows
       config.watchOptions = {
         aggregateTimeout: 200, 

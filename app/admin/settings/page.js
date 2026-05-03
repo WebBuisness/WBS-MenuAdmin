@@ -346,6 +346,7 @@ export default function SettingsPage() {
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => handleApplyToAll(day.key)}
+                                        aria-label={`Apply ${day.label} hours to all days`}
                                         className="h-9 w-9 rounded-full hover:bg-orange-500/10 hover:text-orange-600 transition-colors"
                                       >
                                         <Copy className="w-4 h-4" />
